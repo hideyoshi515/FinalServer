@@ -32,8 +32,7 @@ public class Player implements Serializable {
             Player playerData = new Player();
 
             // UUID 읽기=
-            byte uuidLength = (byte) reverserByte(dis);
-            uuidLength = dis.readByte();
+            int uuidLength = dis.readByte();
             byte[] uuidBytes = new byte[uuidLength];
             for (int i = 0; i < uuidBytes.length; i++) {
                 uuidBytes[i] = dis.readByte();
@@ -49,21 +48,18 @@ public class Player implements Serializable {
             playerData.setRepeat(repeatByte);
 
             // Username 읽기
-            byte usernameLength = (byte) reverserByte(dis);
-            usernameLength = dis.readByte();
+            int usernameLength = dis.readByte();
             byte[] usernameBytes = new byte[usernameLength];
             for (int i = 0; i < usernameLength; i++) {
                 usernameBytes[i] = dis.readByte();
             }
             playerData.setUsername(new String(usernameBytes, StandardCharsets.UTF_8));
 
-            int roguepointByte = reverserByte(dis);
+            int roguepointByte = reverseBytesRe(dis);
             playerData.setRoguepoint(roguepointByte);
-            System.out.println("UUID Length: " + uuidLength);
             System.out.println("UUID: " + playerData.getUuid());
             System.out.println("Level: " + playerData.getLv());
             System.out.println("Repeat: " + playerData.getRepeat());
-            System.out.println("Username Length: " + usernameLength);
             System.out.println("Username: " + playerData.getUsername());
             System.out.println("Roguepoint: " + playerData.getRoguepoint());
 
@@ -195,7 +191,6 @@ public class Player implements Serializable {
             DataOutputStream out = new DataOutputStream(bos);
             // UUID 쓰기
             byte[] uuidBytes = playerData.getUuid().getBytes(StandardCharsets.UTF_8);
-            out.writeInt(playerData.getUuid().length()); // UUID 길이
             out.writeByte(playerData.getUuid().length());
             out.write(uuidBytes); // UUID 데이터
 
@@ -207,7 +202,6 @@ public class Player implements Serializable {
 
             // Username 쓰기
             byte[] usernameBytes = playerData.getUsername().getBytes();
-            out.writeInt(playerData.getUsername().length()); // Username 길이
             out.write(playerData.getUsername().getBytes(StandardCharsets.UTF_8).length);
             out.write(usernameBytes); // Username 데이터
 
