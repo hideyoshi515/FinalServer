@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Objects;
 import java.util.Random;
 
 public class Player implements Serializable {
@@ -148,6 +149,7 @@ public class Player implements Serializable {
             pstmt.setString(1, player.getUuid());
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
+                player.setUuid(rs.getString("uuid"));
                 player.setLv(rs.getInt("lv"));
                 player.setRepeat(rs.getInt("repeat"));
                 player.setUsername(rs.getString("username"));
@@ -160,28 +162,52 @@ public class Player implements Serializable {
     public static String setCode(byte[] data) throws IOException, SQLException {
         try (Connection con = DBConnection.getConnection()) {
             Player player = deserializePlayer(data);
+
             String updateQuery = "UPDATE account SET continuouscode = ? WHERE uuid = ?";
-            String passCode = randomString(8);
-            PreparedStatement pstmt = con.prepareStatement(updateQuery);
-            pstmt.setString(1, passCode);
-            pstmt.setString(2, player.getUuid());
-            pstmt.executeUpdate();
+            String checkQuery = "SELECT COUNT(*) FROM account WHERE continuouscode = ?";
+
+            String passCode;
+            boolean isDuplicate;
+
+            do {
+                passCode = randomString(8);
+                try (PreparedStatement checkStmt = con.prepareStatement(checkQuery)) {
+                    checkStmt.setString(1, passCode);
+                    try (ResultSet rs = checkStmt.executeQuery()) {
+                        rs.next();
+                        isDuplicate = rs.getInt(1) > 0;  // 중복되면 true, 중복되지 않으면 false
+                    }
+                }
+            } while (isDuplicate);
+
+            try (PreparedStatement pstmt = con.prepareStatement(updateQuery)) {
+                pstmt.setString(1, passCode);
+                pstmt.setString(2, player.getUuid());
+                pstmt.executeUpdate();
+            }
+
             return passCode;
         }
     }
 
-    public static boolean checkCode(byte[] data) throws IOException, SQLException {
+    public static byte[] checkCode(byte[] data) throws IOException, SQLException {
         try (Connection con = DBConnection.getConnection()) {
+            byte[] playerData = null;
             Player player = deserializePlayer(data);
-            String selectQuery = "SELECT * FROM account WHERE uuid = ?";
+            String selectQuery = "SELECT * FROM account WHERE continuouscode = ?";
             boolean vaild = false;
             PreparedStatement pstmt = con.prepareStatement(selectQuery);
             pstmt.setString(1, player.getUuid());
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
-                vaild = player.getUsername() == rs.getString("continuouscode");
+                vaild = Objects.equals(player.getUsername(), rs.getString("continuouscode"));
             }
-            return vaild;
+            if(vaild){
+                playerData = getPlayer(data);
+                setCode(data);
+                System.out.println("Checked UUID : "+player.getUuid());
+            }
+            return playerData;
         }
     }
 
