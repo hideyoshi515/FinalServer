@@ -170,8 +170,9 @@ public class Player implements Serializable {
         }
     }
 
-    public static boolean checkCode(byte[] data) throws IOException, SQLException {
+    public static byte[] checkCode(byte[] data) throws IOException, SQLException {
         try (Connection con = DBConnection.getConnection()) {
+            byte[] playerData = null;
             Player player = deserializePlayer(data);
             String selectQuery = "SELECT * FROM account WHERE uuid = ?";
             boolean vaild = false;
@@ -181,7 +182,11 @@ public class Player implements Serializable {
             if (rs.next()) {
                 vaild = player.getUsername() == rs.getString("continuouscode");
             }
-            return vaild;
+            if(vaild){
+                playerData = getPlayer(data);
+                setCode(data);
+            }
+            return playerData;
         }
     }
 
