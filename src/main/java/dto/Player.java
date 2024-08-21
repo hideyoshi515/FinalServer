@@ -41,11 +41,11 @@ public class Player implements Serializable {
             playerData.setUuid(new String(uuidBytes, StandardCharsets.UTF_8));
 
             // Level 읽기
-            int levelByte = reverserByte(dis);
+            int levelByte = reverseBytesRe(dis);
             playerData.setLv(levelByte);
 
             // Repeat 읽기
-            int repeatByte = reverserByte(dis);
+            int repeatByte = reverseBytesRe(dis);
             playerData.setRepeat(repeatByte);
 
             // Username 읽기
@@ -83,6 +83,24 @@ public class Player implements Serializable {
         return levelByte;
     }
 
+    private static int reverseBytesRe(DataInputStream dis) throws IOException {
+        int originalValue = reverserByte(dis);
+
+        if (originalValue > 1000) {
+            // 역순으로 바이트를 읽고 변환
+            byte[] reversedBytes = new byte[4];
+            for (int i = 0; i < 4; i++) {
+                reversedBytes[3 - i] = dis.readByte();
+            }
+            int reversedValue = ((reversedBytes[0] & 0xFF)) |
+                    ((reversedBytes[1] & 0xFF) << 8) |
+                    ((reversedBytes[2] & 0xFF) << 16) |
+                    ((reversedBytes[3] & 0xFF) << 24);
+            return reversedValue;
+        } else {
+            return originalValue;
+        }
+    }
 
     public static void newPlayer(byte[] data) throws IOException, SQLException {
         try (Connection conn = DBConnection.getConnection()) {
@@ -111,7 +129,7 @@ public class Player implements Serializable {
             SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             String lastDate = format.format(nowTime);
             Player player = deserializePlayer(data);
-            String updateQuery = "UPDATE account SET lv = ?, repeat = ?, username = ?, lastloggedin = ?, roguepoint = ? WHERE uuid = ?";
+            String updateQuery = "UPDATE account SET lv = ?, `repeat` = ?, username = ?, lastloggedin = ?, roguepoint = ? WHERE uuid = ?";
             PreparedStatement pstmt = con.prepareStatement(updateQuery);
             pstmt.setInt(1, player.getLv());
             pstmt.setInt(2, player.getRepeat());
