@@ -109,7 +109,7 @@ public class DBServer {
 
         @Override
         public void exceptionCaught(IoSession session, Throwable cause) {
-            cause.printStackTrace();
+            //cause.printStackTrace();
             session.closeNow();
         }
     }
