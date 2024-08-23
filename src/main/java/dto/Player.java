@@ -24,7 +24,7 @@ public class Player implements Serializable {
     private int roguepoint;
 
     public static Player deserializePlayer(byte[] data) throws IOException {
-        System.out.println("[" + data.length + "] DB Packet Received: " + bytesToHex(data));
+        //System.out.println("[" + data.length + "] DB Packet Received: " + bytesToHex(data));
 
 
         try (ByteArrayInputStream bais = new ByteArrayInputStream(data);
@@ -58,11 +58,11 @@ public class Player implements Serializable {
 
             int roguepointByte = reverseBytesRe(dis);
             playerData.setRoguepoint(roguepointByte);
-            System.out.println("UUID: " + playerData.getUuid());
+            /*System.out.println("UUID: " + playerData.getUuid());
             System.out.println("Level: " + playerData.getLv());
             System.out.println("Repeat: " + playerData.getRepeat());
             System.out.println("Username: " + playerData.getUsername());
-            System.out.println("Roguepoint: " + playerData.getRoguepoint());
+            System.out.println("Roguepoint: " + playerData.getRoguepoint());*/
 
             return playerData;
         }
@@ -159,6 +159,7 @@ public class Player implements Serializable {
         }
     }
 
+
     public static String setCode(byte[] data) throws IOException, SQLException {
         try (Connection con = DBConnection.getConnection()) {
             Player player = deserializePlayer(data);
@@ -190,6 +191,19 @@ public class Player implements Serializable {
         }
     }
 
+    public static void resetCode(String uuid) throws SQLException {
+        try (Connection con = DBConnection.getConnection()) {
+
+            String updateQuery = "UPDATE account SET continuouscode = null WHERE uuid = ?";
+
+
+            try (PreparedStatement pstmt = con.prepareStatement(updateQuery)) {
+                pstmt.setString(1, uuid);
+                pstmt.executeUpdate();
+            }
+        }
+    }
+
     public static byte[] checkCode(byte[] data) throws IOException, SQLException {
         try (Connection con = DBConnection.getConnection()) {
             byte[] playerData = null;
@@ -197,15 +211,19 @@ public class Player implements Serializable {
             String selectQuery = "SELECT * FROM account WHERE continuouscode = ?";
             boolean vaild = false;
             PreparedStatement pstmt = con.prepareStatement(selectQuery);
-            pstmt.setString(1, player.getUuid());
+            pstmt.setString(1, player.getUsername());
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 vaild = Objects.equals(player.getUsername(), rs.getString("continuouscode"));
+                player.setUuid(rs.getString("uuid"));
+                player.setLv(rs.getInt("lv"));
+                player.setRepeat(rs.getInt("repeat"));
+                player.setUsername(rs.getString("username"));
+                player.setRoguepoint(rs.getInt("roguepoint"));
             }
             if(vaild){
-                playerData = getPlayer(data);
-                setCode(data);
-                System.out.println("Checked UUID : "+player.getUuid());
+                playerData = SerializePlayerData(player);
+                resetCode(player.getUuid());
             }
             return playerData;
         }

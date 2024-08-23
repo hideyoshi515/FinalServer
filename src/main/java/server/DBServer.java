@@ -20,19 +20,19 @@ public class DBServer {
         // 프로토콜 인코더 및 디코더 추가
         acceptor.setHandler(new DBServerHandler());
         acceptor.bind(new InetSocketAddress(port));
-        System.out.println("DB Server started on " + port);
+        //System.out.println("DB Server started on " + port);
     }
 
     static class DBServerHandler extends IoHandlerAdapter {
 
         @Override
         public void sessionOpened(IoSession session) throws Exception {
-            System.out.println("DB Session opened: " + session.getRemoteAddress());
+            //System.out.println("DB Session opened: " + session.getRemoteAddress());
         }
 
         @Override
         public void sessionClosed(IoSession session) throws Exception {
-            System.out.println("DB Session closed: " + session.getRemoteAddress());
+            //System.out.println("DB Session closed: " + session.getRemoteAddress());
         }
 
         @Override
@@ -61,11 +61,11 @@ public class DBServer {
             switch (opcode) {
                 case 0:
                     Player.newPlayer(data);
-                    System.out.println("DB Message Received: " + new String(data, StandardCharsets.UTF_8));
+                    //System.out.println("DB Message Received: " + new String(data, StandardCharsets.UTF_8));
                     break;
                 case 1:
                     Player.savePlayer(data);
-                    System.out.println("DB Player saved: " + new String(data, StandardCharsets.UTF_8));
+                    //System.out.println("DB Player saved: " + new String(data, StandardCharsets.UTF_8));
                     break;
                 case 2:
                     playerBytes = Player.getPlayer(data);
@@ -74,7 +74,7 @@ public class DBServer {
                     buffer.put(playerBytes);            // 실제 데이터 추가
                     buffer.flip();
                     session.write(buffer);
-                    System.out.println("[" + playerBytes.length + "] DB Packet Sent: " + bytesToHex(buffer.array()));
+                    //System.out.println("[" + playerBytes.length + "] DB Packet Sent: " + bytesToHex(buffer.array()));
                     break;
                 case 3:
                     String continuousCode = Player.setCode(data);
@@ -83,7 +83,7 @@ public class DBServer {
                     codeBuffer.put(continuousCode.getBytes(StandardCharsets.UTF_8));
                     codeBuffer.flip();
                     session.write(codeBuffer);
-                    System.out.println("[continuousCode] DB Packet Sent: " + bytesToHex(codeBuffer.array()));
+                    //System.out.println("[continuousCode] DB Packet Sent: " + bytesToHex(codeBuffer.array()));
                     break;
                 case 4:
                     playerBytes = Player.checkCode(data);
@@ -93,7 +93,12 @@ public class DBServer {
                         continueBuffer.put(playerBytes);
                         continueBuffer.flip();
                         session.write(continueBuffer);
-                        System.out.println("[" + playerBytes.length + "] DB Packet Sent: " + bytesToHex(continueBuffer.array()));
+                        //System.out.println("[" + playerBytes.length + "] DB Packet Sent: " + bytesToHex(continueBuffer.array()));
+                    }else{
+                        IoBuffer continueBuffer = IoBuffer.allocate(4);
+                        continueBuffer.putInt(0);
+                        continueBuffer.flip();
+                        session.write(continueBuffer);
                     }
                     break;
                 default:
